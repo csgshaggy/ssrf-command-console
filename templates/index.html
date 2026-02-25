@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSRF Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #111; color: #eee; margin: 0; padding: 0; }
+        .container { padding: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 15px; background: #333; border: none; color: #eee; cursor: pointer; }
+        .tab-btn:hover { background: #444; }
+        .tab { display: none; }
+        .tab.hidden { display: none; }
+        .tab:not(.hidden) { display: block; }
+        pre { background: #222; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .btn { padding: 8px 12px; background: #444; border: none; color: #eee; cursor: pointer; }
+        .btn:hover { background: #555; }
+        .btn-small { padding: 5px 10px; }
+        .badge { padding: 5px 10px; border-radius: 4px; margin-left: 10px; }
+        .badge-live { background: #28a745; }
+        .badge-paused { background: #6c757d; }
+        .badge-info { background: #007bff; }
+        .collapsible { background: #333; padding: 10px; cursor: pointer; border: none; width: 100%; text-align: left; }
+        .collapsible-content { display: none; padding: 10px; }
+        .collapsible-content.open { display: block; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .toast { padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; opacity: 1; transition: opacity 0.5s; }
+        .toast-info { background: #007bff; }
+        .toast-success { background: #28a745; }
+        .toast-error { background: #dc3545; }
+        input { padding: 8px; width: 250px; }
+        .scan-control { margin-bottom: 20px; }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>SSRF Dashboard</h1>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn" onclick="loadTab('summary')">Summary</button>
+        <button class="tab-btn" onclick="loadTab('responses')">Responses</button>
+        <button class="tab-btn" onclick="loadTab('recon')">Recon</button>
+        <button class="tab-btn" onclick="loadTab('pivots')">Pivots</button>
+        <button class="tab-btn" onclick="loadTab('clusters')">Clusters</button>
+        <button class="tab-btn" onclick="loadTab('graph')">Graph</button>
+        <button class="tab-btn" onclick="loadTab('live')">Live</button>
+    </div>
+
+    <!-- Manual Scan -->
+    <div class="scan-control">
+        <input id="manualTarget" type="text" placeholder="Enter target IP (e.g., 10.10.10.10)">
+        <button class="btn btn-primary" onclick="startManualScan()">Start Manual Scan</button>
+    </div>
+
+    <!-- SUMMARY TAB -->
+    <div id="summary" class="tab">
+        <button class="collapsible" data-target="summary_data_wrapper">Summary Data</button>
+        <div id="summary_data_wrapper" class="collapsible-content open">
+            <pre id="summary_data"><span class="spinner"></span> Loading...</pre>
+        </div>
+    </div>
+
+    <!-- RESPONSES TAB -->
+    <div id="responses" class="tab hidden">
+        <button class="collapsible" data-target="responses_data_wrapper">Responses</button>
+        <div id="responses_data_wrapper" class="collapsible-content open">
+            <pre id="responses_data"><span class="spinner"></span> Loading...</pre>
+        </div>
+    </div>
+
+    <!-- RECON TAB -->
+    <div id="recon" class="tab hidden">
+        <button class="collapsible" data-target="recon_data_wrapper">Recon Data</button>
+        <div id="recon_data_wrapper" class="collapsible-content open">
+            <pre id="recon_data"><span class="spinner"></span> Loading...</pre>
+        </div>
+    </div>
+
+    <!-- PIVOTS TAB -->
+    <div id="pivots" class="tab hidden">
+        <button class="collapsible" data-target="pivots_data_wrapper">Pivots</button>
+        <div id="pivots_data_wrapper" class="collapsible-content open">
+            <pre id="pivots_data"><span class="spinner"></span> Loading...</pre>
+        </div>
+    </div>
+
+    <!-- CLUSTERS TAB -->
+    <div id="clusters" class="tab hidden">
+        <button class="collapsible" data-target="clusters_data_wrapper">Clusters</button>
+        <div id="clusters_data_wrapper" class="collapsible-content open">
+            <pre id="clusters_data"><span class="spinner"></span> Loading...</pre>
+        </div>
+    </div>
+
+    <!-- GRAPH TAB -->
+    <div id="graph" class="tab hidden">
+        <button class="collapsible" data-target="graph_data_wrapper">Graph Data</button>
+        <div id="graph_data_wrapper" class="collapsible-content open">
+            <pre id="graph_data"><span class="spinner"></span> Loading...</pre>
+        </div>
+    </div>
+
+    <!-- LIVE TAB -->
+    <div id="live" class="tab hidden">
+        <h2>
+            Live Scan Feed
+            <span id="live_status_badge" class="badge badge-live">Live</span>
+            <span id="live_scan_dir" class="badge badge-info">Scan: n/a</span>
+        </h2>
+
+        <div class="controls-row">
+            <button id="livePauseBtn" class="btn btn-small">Pause Live Feed</button>
+            <button id="liveResumeBtn" class="btn btn-small" disabled>Resume</button>
+        </div>
+
+        <h3>Status</h3>
+        <pre id="live_status">Waiting for status...</pre>
+
+        <h3>Recent Events</h3>
+        <pre id="live_log">Waiting for events...</pre>
+    </div>
+
+</div>
+
+<!-- Toast Notifications -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- FULL JAVASCRIPT BLOCK -->
+<script>
+/* ---------------------------
+   UTILITY: Toast Notifications
+---------------------------- */
+function showToast(message, type = "info") {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = "toast";
+
+    if (type === "error") toast.classList.add("toast-error");
+    else if (type === "success") toast.classList.add("toast-success");
+    else toast.classList.add("toast-info");
+
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 500);
+    }, 2500);
+}
+
+/* ---------------------------
+   FETCH HELPERS
+---------------------------- */
+async function fetchJSON(url) {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        showToast(`Error loading ${url}: ${err}`, "error");
+        return null;
+    }
+}
+
+/* ---------------------------
+   LOADERS FOR EACH TAB
+---------------------------- */
+async function loadSummary() {
+    const data = await fetchJSON("/api/summary");
+    if (data) {
+        document.getElementById("summary_data").textContent =
+            JSON.stringify(data, null, 2);
+    }
+}
+
+async function loadResponses() {
+    const data = await fetchJSON("/api/responses");
+    if (data) {
+        const pre = document.getElementById("responses_data");
+        const text = JSON.stringify(data, null, 2);
+        pre.textContent = text;
+        pre.setAttribute("data-original", text);
+    }
+}
+
+async function loadRecon() {
+    const data = await fetchJSON("/api/recon");
+    if (data) {
+        document.getElementById("recon_data").textContent =
+            JSON.stringify(data, null, 2);
+    }
+}
+
+async function loadPivots() {
+    const data = await fetchJSON("/api/pivots");
+    if (data) {
+        document.getElementById("pivots_data").textContent =
+            JSON.stringify(data, null, 2);
+    }
+}
+
+async function loadClusters() {
+    const data = await fetchJSON("/api/clusters");
+    if (data) {
+        document.getElementById("clusters_data").textContent =
+            JSON.stringify(data, null, 2);
+    }
+}
+
+async function loadGraph() {
+    const data = await fetchJSON("/api/graph");
+    if (data) {
+        document.getElementById("graph_data").textContent =
+            JSON.stringify(data, null, 2);
+    }
+}
+
+/* ---------------------------
+   MANUAL SCAN START
+---------------------------- */
+async function startManualScan() {
+    const targetInput = document.getElementById("manualTarget");
+    const target = targetInput.value.trim();
+
+    if (!target) {
+        showToast("Enter a target IP first.", "error");
+        targetInput.focus();
+        return;
+    }
+
+    showToast("Starting manual scan...", "info");
+
+    try {
+        const res = await fetch("/api/start_scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ target })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        const scanId = data.scan_id || "manual";
+        document.getElementById("live_scan_dir").textContent = `Scan: ${scanId}`;
+        showToast(`Scan started: ${scanId}`, "success");
+
+        loadTab("live", true);
+
+    } catch (err) {
+        showToast(`Scan failed: ${err}`, "error");
+    }
+}
+
+/* ---------------------------
+   LIVE FEED POLLING
+---------------------------- */
+let liveInterval = null;
+
+function updateLiveFeedUI(data) {
+    const statusEl = document.getElementById("live_status");
+    const logEl = document.getElementById("live_log");
+    const scanDirBadge = document.getElementById("live_scan_dir");
+
+    if (!data) {
+        statusEl.textContent = "No status";
+        logEl.textContent = "No events";
+        return;
+    }
+
+    if (typeof data.status === "object") {
+        statusEl.textContent = JSON.stringify(data.status, null, 2);
+    } else if (typeof data.status === "string") {
+        statusEl.textContent = data.status;
+    } else {
+        statusEl.textContent = "No status";
+    }
+
+    if (Array.isArray(data.log) && data.log.length > 0) {
+        logEl.textContent = data.log.join("");
+    } else {
+        logEl.textContent = "No events";
+    }
+
+    if (data.scan_dir) {
+        scanDirBadge.textContent = `Scan: ${data.scan_dir}`;
+    }
+
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function startLiveFeed() {
+    if (liveInterval) return;
+
+    const badge = document.getElementById("live_status_badge");
+    const pauseBtn = document.getElementById("livePauseBtn");
+    const resumeBtn = document.getElementById("liveResumeBtn");
+
+    badge.className = "badge badge-live";
+    badge.textContent = "Live";
+    pauseBtn.disabled = false;
+    resumeBtn.disabled = true;
+
+    liveInterval = setInterval(async () => {
+        const data = await fetchJSON("/api/live");
+        updateLiveFeedUI(data);
+    }, 1500);
+}
+
+function stopLiveFeed() {
+    if (liveInterval) {
+        clearInterval(liveInterval);
+        liveInterval = null;
+    }
+
+    const badge = document.getElementById("live_status_badge");
+    const pauseBtn = document.getElementById("livePauseBtn");
+    const resumeBtn = document.getElementById("liveResumeBtn");
+
+    badge.className = "badge badge-paused";
+    badge.textContent = "Paused";
+    pauseBtn.disabled = true;
+    resumeBtn.disabled = false;
+}
+
+/* ---------------------------
+   TAB SWITCHING
+---------------------------- */
+function loadTab(tabId, force = false) {
+    document.querySelectorAll(".tab").forEach(tab => tab.classList.add("hidden"));
+    document.getElementById(tabId).classList.remove("hidden");
+
+    if (tabId === "summary") loadSummary();
+    if (tabId === "responses") loadResponses();
+    if (tabId === "recon") loadRecon();
+    if (tabId === "pivots") loadPivots();
+    if (tabId === "clusters") loadClusters();
+    if (tabId === "graph") loadGraph();
+    if (tabId === "live" && force) startLiveFeed();
+}
+
+/* ---------------------------
+   COLLAPSIBLE SECTIONS
+---------------------------- */
+document.querySelectorAll(".collapsible").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-target");
+        const content = document.getElementById(targetId);
+        content.classList.toggle("open");
+    });
+});
+
+/* ---------------------------
+   LIVE FEED BUTTONS
+---------------------------- */
+document.getElementById("livePauseBtn").addEventListener("click", stopLiveFeed);
+document.getElementById("liveResumeBtn").addEventListener("click", startLiveFeed);
+
+/* ---------------------------
+   INITIAL LOAD
+---------------------------- */
+loadTab("summary");
+</script>
+
+</body>
+</html>

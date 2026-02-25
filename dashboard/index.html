@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSRF Command Console Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="navbar">
+    <button onclick="showPanel('run')">Run Mode</button>
+    <button onclick="showPanel('live')">Live Scan</button>
+    <button onclick="showPanel('history')">History</button>
+    <button onclick="showPanel('favorites')">Favorites</button>
+    <button onclick="showPanel('diagnostics')">Diagnostics</button>
+    <button onclick="showPanel('structure')">Structure Check</button>
+    <button onclick="showPanel('themes')">Themes</button>
+    <button onclick="runLastMode()">Run Last</button>
+</div>
+
+<div id="content">
+
+    <!-- RUN MODE -->
+    <div class="panel" id="panel-run">
+        <h2>Run Mode</h2>
+        <label>Mode:</label>
+        <select id="modeSelect"></select>
+
+        <label>Target:</label>
+        <input id="targetInput" placeholder="optional">
+
+        <label>Options (JSON):</label>
+        <textarea id="optionsInput" placeholder='{"depth": 3}'></textarea>
+
+        <button onclick="runMode()">Run</button>
+
+        <pre id="runOutput"></pre>
+    </div>
+
+    <!-- LIVE SCAN -->
+    <div class="panel" id="panel-live">
+        <h2>Live Scan</h2>
+        <label>IPs (one per line):</label>
+        <textarea id="liveIpsInput" rows="5" placeholder="192.168.0.10&#10;192.168.0.11"></textarea>
+        <button onclick="startLiveScan()">Start Live Scan</button>
+
+        <h3>Live Output</h3>
+        <pre id="liveOutput"></pre>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="panel" id="panel-history">
+        <h2>History</h2>
+        <div id="historyList"></div>
+    </div>
+
+    <!-- FAVORITES -->
+    <div class="panel" id="panel-favorites">
+        <h2>Favorites</h2>
+        <div id="favoritesList"></div>
+
+        <h3>Add Favorite</h3>
+        <input id="favAddInput" placeholder="mode name">
+        <button onclick="addFavorite()">Add</button>
+
+        <h3>Remove Favorite</h3>
+        <input id="favRemoveInput" placeholder="mode name">
+        <button onclick="removeFavorite()">Remove</button>
+    </div>
+
+    <!-- DIAGNOSTICS -->
+    <div class="panel" id="panel-diagnostics">
+        <h2>Diagnostics</h2>
+        <pre id="diagnosticsOutput"></pre>
+    </div>
+
+    <!-- STRUCTURE CHECK -->
+    <div class="panel" id="panel-structure">
+        <h2>Structure Check</h2>
+        <pre id="structureOutput"></pre>
+    </div>
+
+    <!-- THEMES -->
+    <div class="panel" id="panel-themes">
+        <h2>Themes</h2>
+        <select id="themeSelect"></select>
+        <button onclick="applyTheme()">Apply Theme</button>
+    </div>
+
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

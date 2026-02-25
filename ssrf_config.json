@@ -1,0 +1,31 @@
+{
+    "timeout": 1,
+    "max_workers": 200,
+    "parallel": true,
+
+    "ports": [80, 443, 8080, 10000],
+
+    "paths": [
+        "/",
+        "/flag",
+        "/admin",
+        "/api"
+    ],
+
+    "enable_post": false,
+    "enable_header_fuzz": false,
+    "enable_jitter": false,
+
+    "pivot_max_depth": 0,
+
+    "save_responses": false,
+    "save_only_interesting": true,
+
+    "max_pivots": 50,
+    "max_errors": 50,
+
+    "user_agents": [
+        "Mozilla/5.0",
+        "curl/8.0"
+    ]
+}

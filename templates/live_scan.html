@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SSRF Live Scan Viewer</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #eee; }
+    #log { white-space: pre-wrap; border: 1px solid #444; padding: 10px; height: 400px; overflow-y: auto; }
+    input { width: 300px; }
+  </style>
+</head>
+<body>
+  <h1>SSRF Live Scan Viewer</h1>
+  <label>IPs (comma-separated): <input id="ips" value="127.0.0.1"></label>
+  <button onclick="startScan()">Start Scan</button>
+  <div id="log"></div>
+
+  <script>
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent += msg + "\n";
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function startScan() {
+      const ips = document.getElementById('ips').value.split(',').map(x => x.trim()).filter(Boolean);
+      const ws = new WebSocket("ws://127.0.0.1:5001/ws/scan");
+
+      ws.onopen = () => {
+        log("WebSocket connected, sending scan request...");
+        ws.send(JSON.stringify({ ips: ips, workers: 10 }));
+      };
+
+      ws.onmessage = (event) => {
+        log("EVENT: " + event.data);
+      };
+
+      ws.onerror = (e) => {
+        log("WebSocket error: " + e);
+      };
+
+      ws.onclose = () => {
+        log("WebSocket closed.");
+      };
+    }
+  </script>
+</body>
+</html>

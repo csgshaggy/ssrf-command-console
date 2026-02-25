@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSRF Command Console Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<div id="app">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+        <h2>SSRF Console</h2>
+
+        <div class="status-row">
+            <span class="status-dot" id="backendStatusDot"></span>
+            <span id="backendStatusText">Checking backend...</span>
+        </div>
+
+        <button class="sidebar-btn" data-tab="runTab">Run Mode</button>
+        <button class="sidebar-btn" data-tab="historyTab">History</button>
+        <button class="sidebar-btn" data-tab="favoritesTab">Favorites</button>
+        <button class="sidebar-btn" data-tab="diagnosticsTab">Diagnostics</button>
+        <button class="sidebar-btn" data-tab="structureTab">Structure</button>
+        <button class="sidebar-btn" data-tab="themesTab">Themes</button>
+
+        <div class="sidebar-section">
+            <h3>Quick Actions</h3>
+            <button id="restartBtn">Restart Backend</button>
+            <small id="restartHint">
+                Uses /api/restart if available, otherwise shows instructions.
+            </small>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Shortcuts</h3>
+            <ul class="shortcut-list">
+                <li><b>Ctrl+Enter</b> – Run mode</li>
+                <li><b>Ctrl+R</b> – Focus Run tab</li>
+                <li><b>Ctrl+H</b> – Focus History</li>
+                <li><b>Ctrl+F</b> – Focus Favorites</li>
+                <li><b>Ctrl+D</b> – Focus Diagnostics</li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main id="main">
+
+        <!-- RUN TAB -->
+        <section id="runTab" class="tab active">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Run Mode</h2>
+                    <div class="panel-tools">
+                        <input id="modeSearch" placeholder="Filter modes...">
+                    </div>
+                </div>
+
+                <label>Mode</label>
+                <select id="modeSelect"></select>
+
+                <label>Target</label>
+                <div class="target-row">
+                    <input id="targetInput" placeholder="http://example.com">
+                    <div class="target-suggestions" id="targetSuggestions"></div>
+                </div>
+
+                <button id="runBtn">Run</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Output</h2>
+                    <button id="clearOutputBtn" class="small-btn">Clear</button>
+                </div>
+                <pre id="outputBox">Waiting for command...</pre>
+            </div>
+        </section>
+
+        <!-- HISTORY TAB -->
+        <section id="historyTab" class="tab">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>History</h2>
+                    <button id="clearHistoryBtn" class="small-btn">Clear History</button>
+                </div>
+                <div id="historyList" class="list-container"></div>
+            </div>
+        </section>
+
+        <!-- FAVORITES TAB -->
+        <section id="favoritesTab" class="tab">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Favorites</h2>
+                </div>
+                <div id="favoritesList" class="list-container"></div>
+            </div>
+        </section>
+
+        <!-- DIAGNOSTICS TAB -->
+        <section id="diagnosticsTab" class="tab">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Diagnostics</h2>
+                    <button id="runDiagnosticsBtn" class="small-btn">Run Diagnostics</button>
+                </div>
+                <pre id="diagnosticsBox"></pre>
+            </div>
+        </section>
+
+        <!-- STRUCTURE TAB -->
+        <section id="structureTab" class="tab">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Structure Check</h2>
+                    <button id="runStructureBtn" class="small-btn">Check Structure</button>
+                </div>
+                <pre id="structureBox"></pre>
+            </div>
+        </section>
+
+        <!-- THEMES TAB -->
+        <section id="themesTab" class="tab">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Themes</h2>
+                </div>
+                <select id="themeSelect"></select>
+                <button id="applyThemeBtn">Apply Theme</button>
+                <pre id="themeInfoBox"></pre>
+            </div>
+        </section>
+
+        <!-- RESTART MODAL -->
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal">
+                <h2>Restart Backend</h2>
+                <pre id="modalMessage"></pre>
+                <button id="closeModalBtn">Close</button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

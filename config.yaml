@@ -1,0 +1,15 @@
+project_root: /home/kali/SSRF_CONSOLE
+
+components:
+  web_dashboard:
+    path: dashboard_web.py
+    port: 5001
+
+  tui_dashboard:
+    path: dashboard.py
+
+  scanner:
+    path: ssrf_scanner/ssrf_scanner.py
+
+  manager:
+    module: ssrf_manager

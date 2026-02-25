@@ -1,0 +1,17 @@
+[
+  {
+    "username": "charles",
+    "password_hash": "$2b$12$REPLACE_THIS_WITH_A_HASH",
+    "roles": ["admin"]
+  },
+  {
+    "username": "operator1",
+    "password_hash": "$2b$12$REPLACE_THIS_TOO",
+    "roles": ["operator"]
+  },
+  {
+    "username": "viewer1",
+    "password_hash": "$2b$12$REPLACE_THIS_TOO",
+    "roles": ["viewer"]
+  }
+

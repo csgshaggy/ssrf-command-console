@@ -1,0 +1,262 @@
+import os
+import time
+import psutil
+import subprocess
+from pathlib import Path
+
+from .backend_service import (
+    kill_backend,
+    kill_and_restart_backend,
+    kill_multi_ports,
+    start_backend_direct,
+    backend_status,
+)
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOGS_DIR = PROJECT_ROOT / "logs"
+
+
+# ------------------------------------------------------------
+# Utility: Clear screen
+# ------------------------------------------------------------
+def clear():
+    os.system("clear" if os.name != "nt" else "cls")
+
+
+# ------------------------------------------------------------
+# Utility: Pause
+# ------------------------------------------------------------
+def pause():
+    input("\nPress Enter to continue...")
+
+
+# ------------------------------------------------------------
+# Live Log Stream (tail -f)
+# ------------------------------------------------------------
+def stream_logs():
+    log_file = LOGS_DIR / "kill_port.log"
+
+    if not log_file.exists():
+        clear()
+        print("[!] No log file found.")
+        pause()
+        return
+
+    clear()
+    print("========== Live Log Stream (Ctrl+C to exit) ==========\n")
+
+    try:
+        with subprocess.Popen(
+            ["tail", "-f", str(log_file)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        ) as proc:
+            for line in proc.stdout:
+                print(line, end="")
+    except KeyboardInterrupt:
+        pass
+
+
+# ------------------------------------------------------------
+# Process Tree Viewer
+# ------------------------------------------------------------
+def process_tree():
+    clear()
+    print("========== Process Tree (Uvicorn/Python) ==========\n")
+
+    for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+        name = proc.info["name"] or ""
+        if "uvicorn" in name or "python" in name:
+            print(f"{proc.pid}  {name}  {' '.join(proc.info['cmdline'] or [])}")
+
+            # Show children
+            for child in proc.children(recursive=True):
+                cname = child.info["name"] or ""
+                print(f"  └─ {child.pid}  {cname}")
+
+    print("\n====================================================")
+    pause()
+
+
+# ------------------------------------------------------------
+# Port Monitor
+# ------------------------------------------------------------
+def port_monitor():
+    clear()
+    print("========== Port Monitor ==========\n")
+
+    ports = [8000, 8001, 8080, 5000]
+
+    for port in ports:
+        result = subprocess.run(
+            ["lsof", "-t", "-i", f":{port}"],
+            capture_output=True,
+            text=True,
+        )
+        pids = result.stdout.strip()
+
+        if pids:
+            print(f"[+] Port {port} in use by PID(s): {pids}")
+        else:
+            print(f"[-] Port {port} is free")
+
+    print("\n==================================")
+    pause()
+
+
+# ------------------------------------------------------------
+# System Resource Panel
+# ------------------------------------------------------------
+def system_resources():
+    clear()
+    print("========== System Resources ==========\n")
+
+    cpu = psutil.cpu_percent(interval=1)
+    mem = psutil.virtual_memory()
+    load = os.getloadavg()
+
+    print(f"CPU Usage:       {cpu}%")
+    print(f"Memory Usage:    {mem.percent}% ({mem.used // (1024**2)}MB / {mem.total // (1024**2)}MB)")
+    print(f"Load Average:    {load[0]:.2f}, {load[1]:.2f}, {load[2]:.2f}")
+
+    print("\n======================================")
+    pause()
+
+
+# ------------------------------------------------------------
+# Backend Ops Menu
+# ------------------------------------------------------------
+def backend_ops_menu():
+    while True:
+        clear()
+        print("=========================================")
+        print("         Backend Operations Menu         ")
+        print("=========================================")
+        print("1) Backend status")
+        print("2) Kill backend (8000)")
+        print("3) Kill + restart backend")
+        print("4) Kill multiple ports")
+        print("5) Start backend directly")
+        print("6) View backend logs")
+        print("7) Stream logs (live)")
+        print("8) Back")
+        print("=========================================")
+
+        choice = input("> ").strip()
+
+        if choice == "1":
+            clear()
+            backend_status()
+            pause()
+
+        elif choice == "2":
+            clear()
+            kill_backend()
+            pause()
+
+        elif choice == "3":
+            clear()
+            kill_and_restart_backend()
+            pause()
+
+        elif choice == "4":
+            clear()
+            kill_multi_ports()
+            pause()
+
+        elif choice == "5":
+            clear()
+            start_backend_direct()
+            pause()
+
+        elif choice == "6":
+            view_logs()
+
+        elif choice == "7":
+            stream_logs()
+
+        elif choice == "8":
+            return
+
+        else:
+            print("Invalid choice.")
+            time.sleep(1)
+
+
+# ------------------------------------------------------------
+# Log Viewer (static)
+# ------------------------------------------------------------
+def view_logs():
+    clear()
+    print("========== Backend Logs ==========\n")
+
+    log_file = LOGS_DIR / "kill_port.log"
+
+    if not log_file.exists():
+        print("[!] No log file found.")
+        pause()
+        return
+
+    with log_file.open("r") as f:
+        lines = f.readlines()
+
+    for line in lines[-200:]:
+        print(line.rstrip())
+
+    print("\n==================================")
+    pause()
+
+
+
+
+
+
+
+
+# ------------------------------------------------------------
+# Main TUI Menu
+# ------------------------------------------------------------
+def main_menu():
+    while True:
+        clear()
+        print("=========================================")
+        print("         SSRF Console Operator TUI       ")
+        print("=========================================")
+        print("1) Backend Operations")
+        print("2) Process Tree")
+        print("3) Port Monitor")
+        print("4) System Resources")
+        print("5) Exit")
+        print("=========================================")
+
+        choice = input("> ").strip()
+
+        if choice == "1":
+            backend_ops_menu()
+
+        elif choice == "2":
+            process_tree()
+
+        elif choice == "3":
+            port_monitor()
+
+        elif choice == "4":
+            system_resources()
+
+        elif choice == "5":
+            clear()
+            print("Exiting Operator Console...")
+            time.sleep(0.5)
+            return
+
+        else:
+            print("Invalid choice.")
+            time.sleep(1)
+
+
+# ------------------------------------------------------------
+# Entry Point
+# ------------------------------------------------------------
+def run():
+    main_menu()

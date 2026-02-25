@@ -1,0 +1,14 @@
+/etc/passwd
+/etc/hostname
+/proc/self/environ
+/proc/self/cmdline
+/etc/os-release
+/.dockerenv
+/proc/1/cgroup
+/var/
+/var/www/
+/var/www/html/
+/home/
+/tmp/
+/log/
+/etc/

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Login — Operator Control Center{% endblock %}
+
+{% block body %}
+<div class="login-wrapper">
+    <div class="login-panel">
+        <h1>Operator Login</h1>
+        <form method="post" action="/login">
+            <label>Username</label>
+            <input type="text" name="username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">Enter Control Center</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+[Unit]
+Description=SSRF Console Backend Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kali/SSRF_CONSOLE
+EnvironmentFile=/etc/ssrf/ssrf.env
+ExecStart=/home/kali/SSRF_CONSOLE/venv/bin/uvicorn dashboard_web:app --host 0.0.0.0 --port ${SSRF_BACKEND_PORT}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

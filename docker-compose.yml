@@ -1,0 +1,61 @@
+services:
+  backend:
+    container_name: operator_backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    depends_on:
+      - db
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      # === Google OAuth ===
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+      OAUTH_AUTH_URL: "https://accounts.google.com/o/oauth2/v2/auth"
+      OAUTH_TOKEN_URL: "https://oauth2.googleapis.com/token"
+      OAUTH_REDIRECT_URI: "http://127.0.0.1:8000/auth/callback"
+
+      # === Database ===
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_NAME: "ssrf_console"
+      DB_USER: "ssrf_user"
+      DB_PASSWORD: "ssrf_password"
+
+      # === App Settings ===
+      PYTHONUNBUFFERED: "1"
+      ENVIRONMENT: "development"
+
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+
+  db:
+    image: postgres:16
+    container_name: operator_db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ssrf_console
+      POSTGRES_USER: ssrf_user
+      POSTGRES_PASSWORD: ssrf_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
